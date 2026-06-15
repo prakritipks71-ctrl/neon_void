@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEON VOID - Cosmic Roguelike Action Shooter</title>
+    <!-- Google Fonts: Orbitron for Sci-Fi Headers, Outfit for Clean UI -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Main Application Wrapper -->
+    <div id="app-container">
+        
+        <!-- Screen 1: Main Menu -->
+        <section id="screen-menu" class="app-screen active">
+            <div class="menu-background-gradient"></div>
+            <div class="menu-content">
+                <h1 class="game-title">NEON VOID</h1>
+                <p class="game-subtitle">PROTOTYPE: COSMIC SECTOR 9</p>
+                
+                <div class="menu-buttons">
+                    <button id="btn-play" class="btn-primary glow-effect-blue">LAUNCH MISSION</button>
+                    <button id="btn-hangar" class="btn-secondary">SHIP HANGAR</button>
+                    <button id="btn-help" class="btn-text">SECTOR DATABASE (HELP)</button>
+                </div>
+            </div>
+            <div class="menu-footer">
+                <p>CREDITS LOADED: <span id="menu-credits-display" class="highlight-cyan">0</span> CR</p>
+            </div>
+        </section>
+
+        <!-- Screen 2: Hangar / Ship Customization -->
+        <section id="screen-hangar" class="app-screen">
+            <div class="hangar-container">
+                <header class="hangar-header">
+                    <button id="btn-hangar-back" class="btn-back">&lt; MENU</button>
+                    <h2>SHIP DECK CUSTOMIZATION</h2>
+                    <div class="hangar-credits">
+                        <span>CREDITS:</span>
+                        <span id="hangar-credits-display" class="highlight-cyan">0</span> CR
+                    </div>
+                </header>
+
+                <div class="hangar-layout">
+                    <!-- Left Column: Module Selection Tabs -->
+                    <div class="hangar-tabs-column">
+                        <div class="tabs-navigation">
+                            <button id="tab-hull" class="tab-btn active" data-category="hull">HULL</button>
+                            <button id="tab-shield" class="tab-btn" data-category="shield">SHIELD</button>
+                            <button id="tab-engine" class="tab-btn" data-category="engine">ENGINE</button>
+                            <button id="tab-weapon" class="tab-btn" data-category="weapon">CORE WEAPON</button>
+                        </div>
+                        
+                        <!-- List of modules in the active category -->
+                        <div id="module-items-container" class="module-items-list">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Middle Column: Ship Visual Preview -->
+                    <div class="hangar-preview-column">
+                        <div class="ship-preview-box">
+                            <canvas id="ship-preview-canvas" width="300" height="300"></canvas>
+                        </div>
+                        <div id="equipped-info-box" class="equipped-info-panel">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Ship Core Stats Comparison -->
+                    <div class="hangar-stats-column">
+                        <h3>SHIP STAT PROFILE</h3>
+                        <div class="stat-bars-group">
+                            <div class="stat-row">
+                                <span class="stat-label">HULL INTEGRITY (HP)</span>
+                                <div class="stat-bar-container">
+                                    <div id="bar-stat-hp" class="stat-bar-fill fill-red" style="width: 50%;"></div>
+                                </div>
+                                <span id="val-stat-hp" class="stat-value">100</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">SHIELD CAPACITY</span>
+                                <div class="stat-bar-container">
+                                    <div id="bar-stat-shield" class="stat-bar-fill fill-blue" style="width: 30%;"></div>
+                                </div>
+                                <span id="val-stat-shield" class="stat-value">50</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">ENGINE IMPULSE (SPEED)</span>
+                                <div class="stat-bar-container">
+                                    <div id="bar-stat-speed" class="stat-bar-fill fill-green" style="width: 60%;"></div>
+                                </div>
+                                <span id="val-stat-speed" class="stat-value">4.0</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">THRUST DISPERSAL (DASH)</span>
+                                <div class="stat-bar-container">
+                                    <div id="bar-stat-dash" class="stat-bar-fill fill-orange" style="width: 40%;"></div>
+                                </div>
+                                <span id="val-stat-dash" class="stat-value">3.0s COOLDOWN</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">WEAPON SPEED MULTIPLIER</span>
+                                <div class="stat-bar-container">
+                                    <div id="bar-stat-weaponspeed" class="stat-bar-fill fill-cyan" style="width: 50%;"></div>
+                                </div>
+                                <span id="val-stat-weaponspeed" class="stat-value">1.0x</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 3: Game Arena Screen -->
+        <section id="screen-game" class="app-screen">
+            <!-- Fullscreen HTML5 Game Canvas -->
+            <canvas id="game-canvas"></canvas>
+
+            <!-- Game HUD Overlay -->
+            <div id="game-hud">
+                <!-- Top Header: XP and Level -->
+                <div class="hud-top">
+                    <div class="hud-level-container">
+                        <span class="hud-level-label">LEVEL</span>
+                        <span id="hud-level-value" class="hud-level-num">1</span>
+                    </div>
+                    <div class="hud-xp-wrapper">
+                        <div class="hud-xp-container">
+                            <div id="hud-xp-fill" class="hud-xp-fill-bar" style="width: 0%;"></div>
+                        </div>
+                        <div class="hud-xp-text">
+                            <span id="hud-xp-nums">0 / 100 XP</span>
+                        </div>
+                    </div>
+                    <div class="hud-credits-count">
+                        <span class="credits-icon">◈</span>
+                        <span id="hud-credits-value">0</span> CR
+                    </div>
+                </div>
+
+                <!-- Bottom HUD: HP, Shields, Active Weapons, Dash -->
+                <div class="hud-bottom">
+                    <!-- Left: HP & Shield Gauges -->
+                    <div class="hud-gauges-container">
+                        <!-- Shield Gauge -->
+                        <div class="gauge-row">
+                            <div class="gauge-icon icon-shield">🛡️</div>
+                            <div class="gauge-track">
+                                <div id="hud-shield-fill" class="gauge-fill fill-blue" style="width: 100%;"></div>
+                            </div>
+                            <span id="hud-shield-values" class="gauge-text">50 / 50</span>
+                        </div>
+                        <!-- HP Gauge -->
+                        <div class="gauge-row">
+                            <div class="gauge-icon icon-hp">❤️</div>
+                            <div class="gauge-track">
+                                <div id="hud-hp-fill" class="gauge-fill fill-red" style="width: 100%;"></div>
+                            </div>
+                            <span id="hud-hp-values" class="gauge-text">100 / 100</span>
+                        </div>
+                    </div>
+
+                    <!-- Middle: Dash Cooldown and Timer -->
+                    <div class="hud-center-info">
+                        <div class="hud-timer" id="hud-timer-display">00:00</div>
+                        <div class="hud-dash-status">
+                            <span class="dash-label">HYPER-DASH (SPACE)</span>
+                            <div class="dash-indicator-track">
+                                <div id="hud-dash-fill" class="dash-indicator-fill" style="width: 100%;"></div>
+                            </div>
+                            <span id="hud-dash-text" class="dash-text">READY</span>
+                        </div>
+                    </div>
+
+                    <!-- Right: Weapon & Support Modules active status -->
+                    <div class="hud-weapons-container">
+                        <div class="weapons-header">EQUIPPED ARSENAL</div>
+                        <div id="hud-weapons-list" class="weapons-grid">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- In-Game Pause Button -->
+            <button id="btn-game-pause" class="hud-pause-btn">||</button>
+
+            <!-- Overlay A: Level Up Upgrades Selection (Glassmorphic Modal) -->
+            <div id="overlay-level-up" class="hud-overlay">
+                <div class="overlay-card-selector">
+                    <h2 class="overlay-title highlight-cyan animate-pulse">COSMIC SYNAPTIC LINK ESTABLISHED</h2>
+                    <p class="overlay-subtitle">SELECT WEAPON OR MODULE UPGRADE</p>
+                    <div id="level-up-options-container" class="card-grid">
+                        <!-- Dynamic Upgrade Cards (3 cards) -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Overlay B: Pause Menu -->
+            <div id="overlay-pause" class="hud-overlay">
+                <div class="pause-menu-panel">
+                    <h2>SYSTEM SUSPENDED</h2>
+                    <div class="pause-buttons">
+                        <button id="btn-pause-resume" class="btn-primary">RESUME SYSTEM</button>
+                        <button id="btn-pause-mute" class="btn-secondary">TOGGLE AUDIO SYNTH</button>
+                        <button id="btn-pause-quit" class="btn-text">ABORT MISSION</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 4: Game Over / Mission Report -->
+        <section id="screen-game-over" class="app-screen">
+            <div class="game-over-background"></div>
+            <div class="game-over-panel">
+                <h1 id="game-over-title" class="title-failed text-red">MISSION TERMINATED</h1>
+                <p id="game-over-reason" class="game-over-subtitle">HULL INTEGRITY COMPROMISED</p>
+                
+                <div class="stats-report">
+                    <div class="report-row">
+                        <span>MISSION DURATION</span>
+                        <span id="report-time" class="highlight-yellow">00:00</span>
+                    </div>
+                    <div class="report-row">
+                        <span>ENTITY EXTINCTION COUNT</span>
+                        <span id="report-kills" class="highlight-cyan">0</span>
+                    </div>
+                    <div class="report-row">
+                        <span>PEAK UPGRADE LEVEL</span>
+                        <span id="report-level" class="highlight-magenta">Level 1</span>
+                    </div>
+                    <div class="report-row border-top">
+                        <span>CREDITS HARVESTED</span>
+                        <span id="report-credits" class="highlight-green">+0 CR</span>
+                    </div>
+                </div>
+
+                <div class="game-over-buttons">
+                    <button id="btn-gameover-hangar" class="btn-primary glow-effect-cyan">RETURN TO HANGAR</button>
+                    <button id="btn-gameover-menu" class="btn-secondary">MAIN MENU</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Overlay C: Sector Database (Help/Guide Panel) -->
+        <div id="overlay-help" class="hud-overlay">
+            <div class="help-panel">
+                <header class="help-header">
+                    <h2>SECTOR FLIGHT LOGS</h2>
+                    <button id="btn-help-close" class="btn-close">×</button>
+                </header>
+                <div class="help-content">
+                    <h3>🕹️ FLIGHT CONTROLS</h3>
+                    <p>Use <span class="key">W</span> <span class="key">A</span> <span class="key">S</span> <span class="key">D</span> or <span class="key">Arrow Keys</span> to navigate your ship in cosmic space. The ship has micro-thruster inertia causing a slight glide.</p>
+                    <p>Press <span class="key">Spacebar</span> or <span class="key">Right-Click</span> to trigger **Hyper-Dash**, rendering you invulnerable and pushing you forward at light speed.</p>
+                    
+                    <h3>⚔️ COMBAT PROTOCOLS</h3>
+                    <p>All weapons are auto-firing. Focus on dodging enemies and gathering floating **XP Crystals** (light green gems) and **Credit Cores** (yellow stars).</p>
+                    <p>Levelling up pauses the game to allow you to adapt your ship. Combine physical laser weapons with gravity wells and orbital shields for optimal survival.</p>
+
+                    <h3>⚙️ MODULAR SHIP DESIGN</h3>
+                    <p>Harvest Credits from runs to spend in the **Ship Hangar** on permanent ship parts:</p>
+                    <ul>
+                        <li><strong>Hulls</strong> increase your max armor health and shield defense thresholds.</li>
+                        <li><strong>Shields</strong> govern recharge delays and add dynamic discharge loops (static shock when broken).</li>
+                        <li><strong>Engines</strong> increase movement impulse and reduce Hyper-Dash cooldowns.</li>
+                        <li><strong>Weapon Cores</strong> provide unique starting weapons.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+    <!-- Load App Coordinator Module -->
+    <script type="module" src="src/main.js"></script>
+</body>
+</html>
