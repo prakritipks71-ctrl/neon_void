@@ -228,14 +228,11 @@ export class Player {
                 this.isDashing = false;
             }
         } else {
-            // Standard inertia movement
+            // Snappy direct movement (no sliding/drift inertia)
             const inputVec = inputManager.getMovementVector();
             
-            this.vx += inputVec.x * this.acceleration;
-            this.vy += inputVec.y * this.acceleration;
-            
-            this.vx *= this.drag;
-            this.vy *= this.drag;
+            this.vx = inputVec.x * this.speed;
+            this.vy = inputVec.y * this.speed;
 
             // Check if dash triggered
             if (inputManager.checkDashTrigger()) {
