@@ -238,6 +238,17 @@ export class GameEngine {
         for (let i = this.enemies.length - 1; i >= 0; i--) {
             const enemy = this.enemies[i];
             
+            const dx = enemy.x - this.player.x;
+            const dy = enemy.y - this.player.y;
+            const dist = Math.hypot(dx, dy);
+            
+            // Despawn far-away enemies to prevent infinite buildup and performance degradation
+            const maxDistance = Math.max(this.width, this.height) * 1.5;
+            if (dist > maxDistance && !enemy.isBoss) {
+                this.enemies.splice(i, 1);
+                continue;
+            }
+            
             // Diamond shooters have special shooting updates
             if (enemy instanceof DiamondShooter) {
                 enemy.update(this.player, cappedDt, this.enemyProjectiles);
@@ -246,10 +257,6 @@ export class GameEngine {
             }
 
             // Check collision with Player
-            const dx = enemy.x - this.player.x;
-            const dy = enemy.y - this.player.y;
-            const dist = Math.hypot(dx, dy);
-            
             if (dist < enemy.radius + this.player.radius) {
                 const shieldBroke = this.player.takeDamage(enemy.damage, this.particles, audio);
                 this.triggerScreenShake(10, 15);
@@ -325,6 +332,18 @@ export class GameEngine {
         // Update and attract drops (XP and Credits)
         for (let i = this.drops.length - 1; i >= 0; i--) {
             const d = this.drops[i];
+            
+            // Despawn far-away drops to prevent memory/CPU leak
+            const dDx = d.x - this.player.x;
+            const dDy = d.y - this.player.y;
+            const dDist = Math.hypot(dDx, dDy);
+            const maxDropDistance = Math.max(this.width, this.height) * 1.6;
+            
+            if (dDist > maxDropDistance) {
+                this.drops.splice(i, 1);
+                continue;
+            }
+            
             d.update(this.player, this.magnetRange);
             
             if (d.collected) {
