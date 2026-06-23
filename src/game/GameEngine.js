@@ -14,72 +14,72 @@ export class GameEngine {
     constructor(canvasId, modules, callbacks) {
         this.canvas = document.getElementById(canvasId);
         this.ctx = this.canvas.getContext('2d');
-        
+
         this.callbacks = callbacks; // { onLevelUp, onGameOver, onCreditsUpdate }
         this.modules = modules; // Equipped ship parts
-        
+
         // Setup systems
         this.input = new InputManager();
         this.particles = new ParticleSystem();
-        
+
         this.width = window.innerWidth;
         this.height = window.innerHeight;
         this.canvas.width = this.width;
         this.canvas.height = this.height;
-        
+
         this.nebula = new NebulaBackground(this.width, this.height);
-        
+
         // Game states
         this.state = 'playing'; // 'playing', 'paused', 'levelup', 'gameover'
         this.timeElapsed = 0; // ms
         this.creditsGained = 0;
         this.enemiesKilled = 0;
-        
+
         // Entity lists
         this.player = null;
         this.enemies = [];
         this.projectiles = [];
         this.enemyProjectiles = [];
         this.drops = [];
-        
+
         // Camera properties
         this.camera = { x: 0, y: 0 };
-        
+
         // Screen shake settings
         this.shakeTimer = 0;
         this.shakeIntensity = 0;
-        
+
         // Spawn rates
         this.enemySpawnTimer = 0;
         this.enemySpawnRate = 1600; // ms between spawns (scales down)
-        
+
         // Stats modifiers
         this.magnetRange = 75; // base magnet distance
-        
+
         this.lastTime = 0;
-        
+
         this._resizeHandler = this._resizeHandler.bind(this);
         this._gameTick = this._gameTick.bind(this);
-        
+
         this.init();
     }
 
     init() {
         window.addEventListener('resize', this._resizeHandler);
-        
+
         // Instantiate Player centered in world coordinates
         this.player = new Player(0, 0, this.modules);
-        
+
         // Apply passive permanent stat cards upgrades based on current player stats:
         // (Base player stats are already initialized in Player constructor, 
         //  but we can customize magnet or fire rate if modified)
-        
+
         // Reset timing
         this.lastTime = performance.now();
-        
+
         // Start procedural ambient soundtrack arpeggiator
         audio.startMusic();
-        
+
         // Request first frame
         requestAnimationFrame(this._gameTick);
     }
@@ -124,9 +124,9 @@ export class GameEngine {
                 this.magnetRange *= 1.40;
             }
         }
-        
+
         audio.playPowerUp();
-        
+
         // Resume play
         this.state = 'playing';
         this.lastTime = performance.now();
@@ -155,7 +155,7 @@ export class GameEngine {
         if (this.state === 'playing') {
             this.update(dt);
         }
-        
+
         this.draw();
 
         requestAnimationFrame(this._gameTick);
@@ -164,12 +164,12 @@ export class GameEngine {
     update(dt) {
         // Cap dt to prevent huge leaps in lag spikes
         const cappedDt = Math.min(100, dt);
-        
+
         this.timeElapsed += cappedDt;
-        
+
         // Spawn scaling over time: spawn rates speed up as time increases
         this.enemySpawnRate = Math.max(450, 1600 - Math.floor(this.timeElapsed / 1000) * 12);
-        
+
         this.enemySpawnTimer += cappedDt;
         if (this.enemySpawnTimer >= this.enemySpawnRate) {
             this.enemySpawnTimer = 0;
@@ -220,9 +220,9 @@ export class GameEngine {
                 // Damage Player
                 const shieldBroke = this.player.takeDamage(ep.damage, this.particles, audio);
                 this.triggerScreenShake(8, 12);
-                
+
                 if (shieldBroke) this.triggerOrbitalDischarge();
-                
+
                 this.enemyProjectiles.splice(i, 1);
             }
         }
@@ -237,18 +237,18 @@ export class GameEngine {
         // Update enemies
         for (let i = this.enemies.length - 1; i >= 0; i--) {
             const enemy = this.enemies[i];
-            
+
             const dx = enemy.x - this.player.x;
             const dy = enemy.y - this.player.y;
             const dist = Math.hypot(dx, dy);
-            
+
             // Despawn far-away enemies to prevent infinite buildup and performance degradation
             const maxDistance = Math.max(this.width, this.height) * 1.5;
             if (dist > maxDistance && !enemy.isBoss) {
                 this.enemies.splice(i, 1);
                 continue;
             }
-            
+
             // Diamond shooters have special shooting updates
             if (enemy instanceof DiamondShooter) {
                 enemy.update(this.player, cappedDt, this.enemyProjectiles);
@@ -260,7 +260,7 @@ export class GameEngine {
             if (dist < enemy.radius + this.player.radius) {
                 const shieldBroke = this.player.takeDamage(enemy.damage, this.particles, audio);
                 this.triggerScreenShake(10, 15);
-                
+
                 if (shieldBroke) this.triggerOrbitalDischarge();
 
                 // Knockback enemy slightly
@@ -277,13 +277,13 @@ export class GameEngine {
                     const rDx = enemy.x - rock.x;
                     const rDy = enemy.y - rock.y;
                     const rDist = Math.hypot(rDx, rDy);
-                    
+
                     if (rDist < enemy.radius + rock.radius) {
                         const isDead = enemy.takeDamage(rock.damage, this.particles);
-                        
+
                         // Spark impact
                         this.particles.spawnSparks(enemy.x, enemy.y, Math.atan2(rDy, rDx), '#ff0088');
-                        
+
                         if (isDead) {
                             this.killEnemy(enemy, i);
                         } else {
@@ -299,10 +299,10 @@ export class GameEngine {
         // Projectiles vs Enemies collision
         for (let pIdx = this.projectiles.length - 1; pIdx >= 0; pIdx--) {
             const proj = this.projectiles[pIdx];
-            
+
             for (let eIdx = this.enemies.length - 1; eIdx >= 0; eIdx--) {
                 const enemy = this.enemies[eIdx];
-                
+
                 // Avoid double hitting
                 if (proj.hitEnemies.has(enemy)) continue;
 
@@ -312,14 +312,14 @@ export class GameEngine {
 
                 if (dist < enemy.radius + proj.radius) {
                     proj.hitEnemies.add(enemy);
-                    
+
                     // Apply damage
                     const isDead = enemy.takeDamage(proj.damage, this.particles);
-                    
+
                     if (isDead) {
                         this.killEnemy(enemy, eIdx);
                     }
-                    
+
                     proj.pierce--;
                     if (proj.pierce <= 0) {
                         this.projectiles.splice(pIdx, 1);
@@ -332,20 +332,20 @@ export class GameEngine {
         // Update and attract drops (XP and Credits)
         for (let i = this.drops.length - 1; i >= 0; i--) {
             const d = this.drops[i];
-            
+
             // Despawn far-away drops to prevent memory/CPU leak
             const dDx = d.x - this.player.x;
             const dDy = d.y - this.player.y;
             const dDist = Math.hypot(dDx, dDy);
             const maxDropDistance = Math.max(this.width, this.height) * 1.6;
-            
+
             if (dDist > maxDropDistance) {
                 this.drops.splice(i, 1);
                 continue;
             }
-            
+
             d.update(this.player, this.magnetRange);
-            
+
             if (d.collected) {
                 if (d.type === 'xp') {
                     const levelUp = this.player.gainXP(d.value);
@@ -356,7 +356,7 @@ export class GameEngine {
                     this.creditsGained += d.value;
                     this.callbacks.onCreditsUpdate(this.creditsGained);
                 }
-                
+
                 audio.playHit(); // ting sound
                 this.drops.splice(i, 1);
             }
@@ -397,16 +397,16 @@ export class GameEngine {
 
     killEnemy(enemy, index) {
         this.enemiesKilled++;
-        
+
         // Trigger neon explosion particle cloud
         this.particles.spawnExplosion(enemy.x, enemy.y, enemy.color, enemy.isBoss ? 50 : 12);
-        
+
         // Trigger procedural boom SFX
         audio.playExplosion();
-        
+
         // Spawn loot
         enemy.dropLoot(this.drops);
-        
+
         this.enemies.splice(index, 1);
     }
 
@@ -414,7 +414,7 @@ export class GameEngine {
         this.state = 'levelup';
         audio.playLevelUp();
         audio.applyLowPassFilter(true);
-        
+
         // Call UI callback to list 3 random choices
         const choices = this.getUpgradeOptions();
         this.callbacks.onLevelUp(choices);
@@ -424,7 +424,7 @@ export class GameEngine {
         // Discharges lightning static shock when shield breaks, damaging all nearby enemies
         const range = 180;
         const dischargeDamage = this.player.shieldModule.dischargeDamage || 0;
-        
+
         if (dischargeDamage <= 0) return;
 
         this.enemies.forEach(e => {
@@ -434,7 +434,7 @@ export class GameEngine {
 
             if (dist < range) {
                 e.takeDamage(dischargeDamage, this.particles);
-                
+
                 // Draw radial discharge bolts
                 this.particles.add(new Particle({
                     x: this.player.x,
@@ -462,28 +462,28 @@ export class GameEngine {
 
     getUpgradeOptions() {
         const fullPool = this.player.getAvailableUpgradesList();
-        
+
         // Shuffle pool
         const shuffled = [...fullPool].sort(() => 0.5 - Math.random());
-        
+
         // Take 3 options
         const cards = shuffled.slice(0, 3);
-        
+
         // Fallback in case pool is somehow empty
         if (cards.length === 0) {
             cards.push({ name: "Repair Core", type: "stat", desc: "Instantly heals Hull Integrity (HP) by 40%." });
         }
-        
+
         return cards;
     }
 
     spawnEnemyWave() {
         const gameSecs = this.timeElapsed / 1000;
         const enemyLevel = 1 + Math.floor(gameSecs / 60); // level increases every 60s
-        
+
         const count = 3 + Math.floor(gameSecs / 15); // enemy wave size scales up
-        const maxEnemiesOnScreen = 120;
-        
+        const maxEnemiesOnScreen = 30;
+
         if (this.enemies.length >= maxEnemiesOnScreen) return; // Keep performance smooth
 
         // Boss spawn rule (spawns once at 300s/5m if not already alive)
@@ -502,10 +502,10 @@ export class GameEngine {
             const spawnDist = Math.max(this.width, this.height) * 0.60;
             const ex = this.player.x + Math.cos(angle) * spawnDist;
             const ey = this.player.y + Math.sin(angle) * spawnDist;
-            
+
             // Decides enemy tier type based on time elapsed
             const rand = Math.random() * 100;
-            
+
             if (gameSecs < 30) {
                 // Only swarmers
                 this.enemies.push(new Swarmer(ex, ey, enemyLevel));
@@ -540,7 +540,7 @@ export class GameEngine {
         this.state = 'gameover';
         audio.applyLowPassFilter(true);
         audio.stopMusic();
-        
+
         // Report final metrics
         this.callbacks.onGameOver({
             reason: reason,
@@ -572,7 +572,7 @@ export class GameEngine {
 
         // 7. Draw player ship and active shields
         this.player.draw(this.ctx, this.camera.x, this.camera.y);
-        
+
         // 8. Draw Orbital Asteroids (passive shield rocks)
         const orbitWeapon = this.player.weapons.find(w => w instanceof OrbitalAsteroids);
         if (orbitWeapon) {
