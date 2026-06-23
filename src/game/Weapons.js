@@ -15,7 +15,7 @@ export class Projectile {
         this.damage = damage;
         this.color = color;
         this.pierce = pierce;
-        
+
         this.life = 120; // Max frames before self-destruct
         this.hitEnemies = new Set(); // Track enemies hit to avoid hitting same enemy multiple times
     }
@@ -29,7 +29,7 @@ export class Projectile {
     draw(ctx, cameraX, cameraY) {
         const x = this.x - cameraX;
         const y = this.y - cameraY;
-        
+
         ctx.save();
         ctx.shadowBlur = 10;
         ctx.shadowColor = this.color;
@@ -121,28 +121,28 @@ export class PulseLaser extends Weapon {
 
     fire(player, enemies, projectList, particles, audio) {
         if (enemies.length === 0) return;
-        
+
         // Find closest enemies
         const targets = [...enemies].sort((a, b) => {
             const distA = Math.hypot(a.x - player.x, a.y - player.y);
             const distB = Math.hypot(b.x - player.x, b.y - player.y);
             return distA - distB;
         }).slice(0, this.projectileCount);
-        
+
         targets.forEach((target, i) => {
             const dx = target.x - player.x;
             const dy = target.y - player.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
-            
+
             // Normalize direction
             const vx = (dx / distance) * this.speed;
             const vy = (dy / distance) * this.speed;
-            
+
             // Slight offset so they don't spawn exactly on top of each other
             const offset = (i - (this.projectileCount - 1) / 2) * 8;
             const perpX = -vy / this.speed * offset;
             const perpY = vx / this.speed * offset;
-            
+
             projectList.push(new Projectile(
                 player.x + perpX,
                 player.y + perpY,
@@ -154,7 +154,7 @@ export class PulseLaser extends Weapon {
                 this.pierce
             ));
         });
-        
+
         audio.playLaser();
     }
 }
@@ -217,15 +217,15 @@ export class OrbitalAsteroids extends Weapon {
 
     draw(ctx, player, cameraX, cameraY) {
         const positions = this.getRockPositions(player);
-        
+
         positions.forEach(rock => {
             const x = rock.x - cameraX;
             const y = rock.y - cameraY;
-            
+
             ctx.save();
             ctx.shadowBlur = 12;
             ctx.shadowColor = '#ff0088'; // Magenta shield glow
-            
+
             // Outer shield aura line
             ctx.strokeStyle = 'rgba(255, 0, 136, 0.05)';
             ctx.lineWidth = 1;
@@ -238,13 +238,13 @@ export class OrbitalAsteroids extends Weapon {
             ctx.beginPath();
             ctx.arc(x, y, rock.radius, 0, Math.PI * 2);
             ctx.fill();
-            
+
             // Core spike
             ctx.fillStyle = '#ffffff';
             ctx.beginPath();
             ctx.arc(x, y, rock.radius * 0.4, 0, Math.PI * 2);
             ctx.fill();
-            
+
             ctx.restore();
         });
     }
@@ -307,10 +307,10 @@ export class SynapseShock extends Weapon {
 
             const closest = targets[0].enemy;
             hitEnemies.push(closest);
-            
+
             // Deal damage
             closest.takeDamage(this.damage, particles);
-            
+
             // Generate visual lightning particle
             const stepCount = 5;
             const segments = [];
@@ -318,12 +318,12 @@ export class SynapseShock extends Weapon {
             const srcY = currentSource.y;
             const dstX = closest.x;
             const dstY = closest.y;
-            
+
             for (let i = 0; i <= stepCount; i++) {
                 const ratio = i / stepCount;
                 let px = srcX + (dstX - srcX) * ratio;
                 let py = srcY + (dstY - srcY) * ratio;
-                
+
                 // Add jitter in perpendicular direction (except edges)
                 if (i > 0 && i < stepCount) {
                     const jitter = 10;
@@ -404,13 +404,13 @@ export class GravityWell extends Weapon {
         // Find a random enemy in sight, or spawn on player if none
         let targetX = player.x;
         let targetY = player.y;
-        
+
         if (enemies.length > 0) {
             const randomEnemy = enemies[Math.floor(Math.random() * enemies.length)];
             targetX = randomEnemy.x;
             targetY = randomEnemy.y;
         }
-        
+
         // Spawn active singularity particle
         particles.add(new SingularityEntity(targetX, targetY, this.maxRadius, this.duration, this.damage, '#ffee00'));
         audio.playShieldBreak(); // Hum/ringing sound
@@ -429,7 +429,7 @@ class SingularityEntity extends Particle {
             grow: maxRadius / 30, // Expand quickly in first 30 frames
             drag: 1.0
         });
-        
+
         this.maxRadius = maxRadius;
         this.tickDamage = tickDamage;
         this.damageInterval = 10; // Deal damage every 10 frames
@@ -441,26 +441,26 @@ class SingularityEntity extends Particle {
             this.grow = 0;
             this.size = this.maxRadius;
         }
-        
+
         // Pull enemies
         enemies.forEach(e => {
             const dx = this.x - e.x;
             const dy = this.y - e.y;
             const dist = Math.hypot(dx, dy);
-            
+
             if (dist < this.size) {
                 // Apply suction vector
-                const force = (1 - dist / this.size) * 1.5;
+                const force = (1 - dist / this.size) * 0.5;
                 e.x += (dx / dist) * force;
                 e.y += (dy / dist) * force;
-                
+
                 // Damage trigger
                 if (this.life % this.damageInterval === 0) {
                     e.takeDamage(this.tickDamage, particles);
                 }
             }
         });
-        
+
         this.update();
     }
 
@@ -469,9 +469,9 @@ class SingularityEntity extends Particle {
         const y = this.y - cameraY;
         const lifeRatio = this.life / this.maxLife;
         const alpha = Math.min(1.0, lifeRatio * 2.0); // Fade out at end
-        
+
         ctx.save();
-        
+
         // Singularity void core (pure black)
         ctx.fillStyle = '#020105';
         ctx.shadowBlur = this.size * 0.4;
@@ -479,7 +479,7 @@ class SingularityEntity extends Particle {
         ctx.beginPath();
         ctx.arc(x, y, this.size * 0.8, 0, Math.PI * 2);
         ctx.fill();
-        
+
         // Cosmic suction ring (semi-transparent yellow/blue vortex)
         ctx.strokeStyle = `rgba(0, 243, 255, ${alpha * 0.35})`;
         ctx.lineWidth = 3;
@@ -496,7 +496,7 @@ class SingularityEntity extends Particle {
             ctx.arc(x + Math.cos(rot) * radius, y + Math.sin(rot) * radius, 3, 0, Math.PI * 2);
             ctx.fill();
         }
-        
+
         ctx.restore();
     }
 }
